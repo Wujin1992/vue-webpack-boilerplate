@@ -1,29 +1,68 @@
+/**
+ * Webpack Configuration
+ */
+const path = require("path");
+const fs = require("fs");
+const autoprefixer = require("autoprefixer");
+const FriendlyErrorsWebpackPlugin = require("friendly-errors-webpack-plugin");
 
+/**
+ * Webpack uses `publicPath` to determine where the app is being served from.
+ * in Development, we always serve from the root. This makes config easier.
+ */
+const publicPath = "/";
+
+// Make sure any symlinks in the project folder are resolved:
+const appDirectory = fs.realpathSync(process.cwd());
+const resolveApp = relativePath => path.resolve(appDirectory, relativePath);
+
+/**
+ * Plugins
+ */
 const { VueLoaderPlugin } = require("vue-loader");
 const htmlWebpackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
-const autoprefixer = require("autoprefixer");
-const path = require("path");
 
 module.exports = {
   entry: {
     main: "./src/main.js",
   },
   output: {
-    filename: "[name].[contenthash:8].js",
-    path: path.resolve(__dirname, "dist"),
-    chunkFilename: "[name].[contenthash:8].js",
+    // The build folder
+    path: resolveApp("dist"),
+    // Generated JS file names (with nested folders).
+    // There will be one main bundle, and one file per asynchronous chunk.
+    // We don't currently advertise code splitting but Webpack supports it.
+    filename: "static/js/[name].[hash:8].js",
+    publicPath: publicPath,
+    chunkFilename: "static/js/[name].[hash:8].chunk.js",
+  },
+  // resolve alias (Absolute paths)
+  resolve: {
+    alias: {
+      vue$: "vue/dist/vue.runtime.esm.js",
+    },
+    extensions: ["*", ".js", ".vue", ".json"],
   },
   module: {
     rules: [
       {
-        test: /\.js$/,
+        test: /\.(js|jsx)$/,
         exclude: /node_modules/,
         use: {
           loader: "babel-loader",
         },
       },
+      // {
+      //   test: /\.html$/,
+      //   use: [
+      //     {
+      //       loader: "html-loader",
+      //       options: { minimize: true }
+      //     }
+      //   ]
+      // },
       {
         test: /\.vue$/,
         loader: "vue-loader",
@@ -51,7 +90,7 @@ module.exports = {
         test: /\.(png|jpe?g|gif|webm|mp4|svg)$/,
         loader: "file-loader",
         options: {
-          name: "[name][contenthash:8].[ext]",
+          name: "[name][hash:8].[ext]",
           outputPath: "assets/img",
           esModule: false,
         },
@@ -62,20 +101,14 @@ module.exports = {
     new VueLoaderPlugin(),
     new CleanWebpackPlugin(),
     new MiniCssExtractPlugin({
-      filename: "[name].[contenthash:8].css",
-      chunkFilename: "[name].[contenthash:8].css",
+      filename: "[name].[hash:8].css",
+      chunkFilename: "[name].[hash:8].css",
     }),
     new htmlWebpackPlugin({
       template: path.resolve(__dirname, "public", "index.html"),
       favicon: "./public/favicon.ico",
     }),
   ],
-  resolve: {
-    alias: {
-      vue$: "vue/dist/vue.runtime.esm.js",
-    },
-    extensions: ["*", ".js", ".vue", ".json"],
-  },
   optimization: {
     moduleIds: "hashed",
     runtimeChunk: "single",
@@ -91,6 +124,6 @@ module.exports = {
     },
   },
   devServer: {
-    historyApiFallback: true,
+    historyApiFallback: true
   },
 };
